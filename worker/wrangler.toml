@@ -1,0 +1,6 @@
+name = "lexisprint-ai"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+[vars]
+GEMINI_MODEL = "gemini-2.5-flash"
+# Create a KV namespace and bind it as DAILY_WORDS if daily caching is desired.
