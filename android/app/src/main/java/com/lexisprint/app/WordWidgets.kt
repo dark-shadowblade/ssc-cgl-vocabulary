@@ -18,7 +18,7 @@ abstract class BaseWordWidget : AppWidgetProvider() {
             val words = org.json.JSONArray(raw)
             if (words.length() == 2) {
                 val word = words.getJSONObject(index)
-                for (id in ids) manager.updateAppWidget(id, views(context, word, date, index))
+                for (id in ids) manager.updateAppWidget(id, createViews(context, word, date, index))
             }
         } else {
             for (id in ids) manager.updateAppWidget(id, loadingViews(context, index))
