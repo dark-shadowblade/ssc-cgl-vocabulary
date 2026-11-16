@@ -59,7 +59,7 @@ export default {
 
       const model = env.GEMINI_MODEL || "gemini-3.8-flash";
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 25000);
+      const timer = setTimeout(() => controller.abort(), 90000);
       let response;
       try {
         response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
@@ -106,7 +106,7 @@ export default {
       }
       return json(data, 200, origin, { "X-LexiSprint-Cache": env.DAILY_WORDS ? "STORED" : "NO-KV" });
     } catch (error) {
-      const message = error.name === "AbortError" ? "Gemini request timed out after 25 seconds." : (error.message || "Unexpected server error");
+      const message = error.name === "AbortError" ? "Gemini request timed out after 90 seconds." : (error.message || "Unexpected server error");
       return json({ error: message }, 500, origin);
     }
   }
