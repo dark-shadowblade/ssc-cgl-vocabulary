@@ -42,9 +42,9 @@ export default {
       const prompt = [
         "Create exactly TWO challenging but useful English vocabulary entries for SSC CGL advanced preparation.",
         "Choose uncommon, exam-relevant words; avoid duplicates from this list: " + used.join(", "),
-        "For each word provide accurate concise fields: word, part, meaning (English), hindi (natural Hindi translation), example (one natural sentence), synonyms (3 comma-separated), antonyms (3 comma-separated).",
+        "For each main word provide word, part, meaning, hindi, example. Also provide exactly 3 synonyms and 3 antonyms as arrays of objects, each with word, meaning (short English definition), and hindi (Hindi meaning).",
         "Return only JSON in this exact shape: {",
-        '"words":[{"word":"","part":"","meaning":"","hindi":"","example":"","synonyms":"","antonyms":""},{"word":"","part":"","meaning":"","hindi":"","example":"","synonyms":"","antonyms":""}]}'
+        '"words":[{"word":"","part":"","meaning":"","hindi":"","example":"","synonyms":[{"word":"","meaning":"","hindi":""}],"antonyms":[{"word":"","meaning":"","hindi":""}]},{"word":"","part":"","meaning":"","hindi":"","example":"","synonyms":[{"word":"","meaning":"","hindi":""}],"antonyms":[{"word":"","meaning":"","hindi":""}]}]}'
       ].join("\n");
 
       const model = env.GEMINI_MODEL || "gemini-3.8-flash";
@@ -75,10 +75,17 @@ export default {
 
       const parsed = JSON.parse(raw.replace(/^```json\s*/i, "").replace(/\s*```$/, ""));
       if (!Array.isArray(parsed.words) || parsed.words.length !== 2) throw new Error("Gemini did not return exactly two words.");
-      const fields = ["word", "part", "meaning", "hindi", "example", "synonyms", "antonyms"];
-      const words = parsed.words.map(item => Object.fromEntries(fields.map(field => [field, String(item[field] || "").trim()])));
+      const words = parsed.words.map(item => ({
+        word: String(item.word || "").trim(),
+        part: String(item.part || "").trim(),
+        meaning: String(item.meaning || "").trim(),
+        hindi: String(item.hindi || "").trim(),
+        example: String(item.example || "").trim(),
+        synonyms: Array.isArray(item.synonyms) ? item.synonyms.slice(0, 3).map(x => ({ word: String(x.word || "").trim(), meaning: String(x.meaning || "").trim(), hindi: String(x.hindi || "").trim() })) : [],
+        antonyms: Array.isArray(item.antonyms) ? item.antonyms.slice(0, 3).map(x => ({ word: String(x.word || "").trim(), meaning: String(x.meaning || "").trim(), hindi: String(x.hindi || "").trim() })) : []
+      }));
       const usedSet = new Set(used.map(word => word.toLowerCase()));
-      if (words.some(word => fields.some(field => !word[field]) || usedSet.has(word.word.toLowerCase())) ||
+      if (words.some(word => !word.word || !word.part || !word.meaning || !word.hindi || !word.example || word.synonyms.length !== 3 || word.antonyms.length !== 3 || [...word.synonyms, ...word.antonyms].some(x => !x.word || !x.meaning || !x.hindi) || usedSet.has(word.word.toLowerCase())) ||
           words[0].word.toLowerCase() === words[1].word.toLowerCase()) {
         throw new Error("Gemini returned duplicate or incomplete vocabulary. Please retry.");
       }
