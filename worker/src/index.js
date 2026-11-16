@@ -26,7 +26,16 @@ export default {
     // Durable daily cache: bind a Cloudflare KV namespace named DAILY_WORDS.
     if (env.DAILY_WORDS) {
       const cached = await env.DAILY_WORDS.get(cacheKey);
-      if (cached) return json(JSON.parse(cached), 200, origin, { "X-LexiSprint-Cache": "HIT" });
+      if (cached) {
+        const saved = JSON.parse(cached);
+        const modern = Array.isArray(saved.words) && saved.words.length === 2 &&
+          saved.words.every(item => ["synonyms", "antonyms"].every(key =>
+            Array.isArray(item[key]) && item[key].length === 3 &&
+            item[key].every(x => x && typeof x === "object" && x.word && x.meaning && x.hindi)
+          ));
+        if (modern) return json(saved, 200, origin, { "X-LexiSprint-Cache": "HIT" });
+        // Older cached entries used plain strings; regenerate them in the richer format.
+      }
     }
 
     if (request.method === "GET") {
