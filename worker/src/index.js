@@ -23,8 +23,10 @@ export default {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: "Invalid date" }, 400, origin);
     const cacheKey = "daily:" + date;
 
-    // Durable daily cache: bind a Cloudflare KV namespace named DAILY_WORDS.
-    if (env.DAILY_WORDS) {
+    const requestBody = request.method === "POST" ? await request.clone().json().catch(() => ({})) : {};
+    const forceNew = request.method === "POST" && requestBody.force === true;
+    // Durable daily cache: normal requests reuse today's set; forceNew creates a fresh set.
+    if (env.DAILY_WORDS && !forceNew) {
       const cached = await env.DAILY_WORDS.get(cacheKey);
       if (cached) {
         const saved = JSON.parse(cached);
@@ -34,7 +36,6 @@ export default {
             item[key].every(x => x && typeof x === "object" && x.word && x.meaning && x.hindi)
           ));
         if (modern) return json(saved, 200, origin, { "X-LexiSprint-Cache": "HIT" });
-        // Older cached entries used plain strings; regenerate them in the richer format.
       }
     }
 
@@ -46,7 +47,7 @@ export default {
     if (!env.GEMINI_API_KEY) return json({ error: "GEMINI_API_KEY is not configured" }, 500, origin);
 
     try {
-      const body = await request.json();
+      const body = requestBody;
       const used = Array.isArray(body.used) ? body.used.filter(x => typeof x === "string").slice(-600) : [];
       const prompt = [
         "Create exactly TWO challenging but useful English vocabulary entries for SSC CGL advanced preparation.",
