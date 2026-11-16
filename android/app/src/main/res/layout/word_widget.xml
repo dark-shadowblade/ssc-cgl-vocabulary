@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="14dp"
+    android:background="#171B2B">
+    <TextView android:id="@+id/kicker" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="LEXISPRINT · WORD 01" android:textColor="#A7B0CC" android:textSize="10sp" />
+    <TextView android:id="@+id/word" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Loading…" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="20sp"
+        android:maxLines="1" android:ellipsize="end" android:layout_marginTop="8dp" />
+    <TextView android:id="@+id/meaning" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Daily SSC CGL vocabulary" android:textColor="#E0E5F5" android:textSize="12sp"
+        android:maxLines="2" android:ellipsize="end" android:layout_marginTop="5dp" />
+    <TextView android:id="@+id/hindi" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="हिंदी अर्थ" android:textColor="#9EDBC8" android:textSize="12sp"
+        android:maxLines="1" android:ellipsize="end" android:layout_marginTop="4dp" />
+</LinearLayout>
