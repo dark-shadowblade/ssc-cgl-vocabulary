@@ -35,7 +35,7 @@ async function generateWords(env, date, used = []) {
     '"words":[{"word":"","part":"","meaning":"","hindi":"","example":"","synonyms":[{"word":"","meaning":"","hindi":""}],"antonyms":[{"word":"","meaning":"","hindi":""}]},{"word":"","part":"","meaning":"","hindi":"","example":"","synonyms":[{"word":"","meaning":"","hindi":""}],"antonyms":[{"word":"","meaning":"","hindi":""}]}]}'
   ].join("\n");
 
-  const model = env.GEMINI_MODEL || "gemini-3.8-flash";
+  const model = env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 120000);
@@ -57,7 +57,7 @@ async function generateWords(env, date, used = []) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.6,
-            maxOutputTokens: 1200,
+            maxOutputTokens: 1000,
             responseMimeType: "application/json",
             thinkingConfig: {
               thinkingLevel: "LOW"
