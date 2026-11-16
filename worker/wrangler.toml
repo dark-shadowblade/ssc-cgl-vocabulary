@@ -7,3 +7,7 @@ GEMINI_MODEL = "gemini-3.8-flash"
 
 # In Cloudflare Dashboard, create a KV namespace and bind it to this Worker
 # using the binding name DAILY_WORDS.
+
+
+[triggers]
+crons = ["30 21 * * *"] # 03:00 Asia/Kolkata (UTC+5:30)
