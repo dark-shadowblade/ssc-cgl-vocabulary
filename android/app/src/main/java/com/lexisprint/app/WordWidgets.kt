@@ -50,7 +50,7 @@ abstract class BaseWordWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.kicker, "LEXISPRINT · WORD 0${index + 1} · $date")
             views.setTextViewText(R.id.word, word.optString("word", "Word unavailable"))
             views.setTextViewText(R.id.meaning, word.optString("meaning", "Meaning unavailable"))
-            views.setTextViewText(R.id.hindi, word.optString("hindi", "हिंदी अर्थ उपलब्ध नहीं"))
+            views.setTextViewText(R.id.hindi, word.optString("hindi").takeIf { it.isNotBlank() } ?: "हिंदी अर्थ उपलब्ध नहीं")
 
             val intent = PendingIntent.getActivity(
                 context,
