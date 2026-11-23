@@ -38,7 +38,8 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
         }
 
         try {
-            val words = fetchTwoDictionaryWords()
+            val seenWords = readWordHistory(prefs.getString(KEY_HISTORY, null))
+            val words = fetchTwoDictionaryWords(seenWords)
             if (!validWords(words)) {
                 Log.w(TAG, "Dictionary did not return two distinct usable entries")
                 return@withContext Result.retry()
@@ -48,6 +49,7 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
             val saved = prefs.edit()
                 .putString(KEY_DATE, today)
                 .putString(KEY_WORDS, words.toString())
+                .putString(KEY_HISTORY, updatedWordHistory(seenWords, words).toString())
                 .commit()
             if (!saved) return@withContext Result.retry()
 
@@ -59,7 +61,7 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
         }
     }
 
-    private fun fetchTwoDictionaryWords(): JSONArray {
+    private fun fetchTwoDictionaryWords(seenWords: Set<String>): JSONArray {
         val selected = LinkedHashMap<String, JSONObject>()
 
         // This dictionary endpoint supplies a random entry from its dictionary word list.
@@ -68,7 +70,10 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
             if (selected.size < 2) {
                 val entry = requestJson("$DICTIONARY_BASE/wordoftheday")
                 val word = parseDictionaryEntry(entry)
-                if (word != null) selected.putIfAbsent(word.optString("word").lowercase(), word)
+                if (word != null) {
+                    val key = word.optString("word").trim().lowercase()
+                    if (key !in seenWords) selected.putIfAbsent(key, word)
+                }
             }
         }
 
@@ -83,13 +88,16 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
             for (index in 0 until candidates.length()) {
                 if (selected.size >= 2) break
                 val candidate = candidates.optString(index).trim()
-                if (candidate.isBlank() || candidate.equals(first, ignoreCase = true)) continue
+                if (candidate.isBlank() || candidate.equals(first, ignoreCase = true) || candidate.lowercase() in seenWords) continue
                 try {
                     val definition = requestJson(
                         "$DICTIONARY_BASE/definitions/en/${encode(candidate)}?compact=true"
                     )
                     val parsed = parseDictionaryEntry(definition)
-                    if (parsed != null) selected.putIfAbsent(parsed.optString("word").lowercase(), parsed)
+                    if (parsed != null) {
+                        val key = parsed.optString("word").trim().lowercase()
+                        if (key !in seenWords) selected.putIfAbsent(key, parsed)
+                    }
                 } catch (error: Exception) {
                     Log.d(TAG, "Skipping dictionary candidate that has no usable definition", error)
                 }
@@ -162,6 +170,22 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
         }
     }
 
+    private fun readWordHistory(raw: String?): Set<String> = try {
+        val array = JSONArray(raw ?: "[]")
+        (0 until array.length()).map { array.optString(it).trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+    } catch (_: Exception) {
+        emptySet()
+    }
+
+    private fun updatedWordHistory(previous: Set<String>, todayWords: JSONArray): JSONArray {
+        val history = LinkedHashSet(previous)
+        for (i in 0 until todayWords.length()) {
+            val word = todayWords.optJSONObject(i)?.optString("word")?.trim()?.lowercase().orEmpty()
+            if (word.isNotBlank()) history.add(word)
+        }
+        return JSONArray(history.toList().takeLast(MAX_HISTORY_WORDS))
+    }
+
     private fun validCachedWords(raw: String?): Boolean = try {
         raw != null && validWords(JSONArray(raw))
     } catch (_: Exception) {
@@ -232,6 +256,8 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
         private const val PREFS_NAME = "daily_words"
         private const val KEY_DATE = "date"
         private const val KEY_WORDS = "words"
+        private const val KEY_HISTORY = "seen_words"
+        private const val MAX_HISTORY_WORDS = 10000
         private const val MAX_WORD_ATTEMPTS = 8
         private val INDIA_ZONE: ZoneId = ZoneId.of("Asia/Kolkata")
 
