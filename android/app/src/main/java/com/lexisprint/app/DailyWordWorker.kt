@@ -64,17 +64,13 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
     private fun fetchTwoDictionaryWords(seenWords: Set<String>): JSONArray {
         val selected = LinkedHashMap<String, JSONObject>()
 
-        // This dictionary endpoint supplies a random entry from its dictionary word list.
-        // Ask again when it returns a duplicate; cap retries to avoid a tight request loop.
-        repeat(MAX_WORD_ATTEMPTS) {
-            if (selected.size < 2) {
-                val entry = requestJson("$DICTIONARY_BASE/wordoftheday")
-                val word = parseDictionaryEntry(entry)
-                if (word != null) {
-                    val key = word.optString("word").trim().lowercase()
-                    if (key !in seenWords) selected.putIfAbsent(key, word)
-                }
-            }
+        // The dictionary's random Word of the Day endpoint is called only once per day.
+        // This also stays comfortably within its published per-minute request limit.
+        val entry = requestJson("$DICTIONARY_BASE/wordoftheday")
+        val word = parseDictionaryEntry(entry)
+        if (word != null) {
+            val key = word.optString("word").trim().lowercase()
+            if (key !in seenWords) selected.putIfAbsent(key, word)
         }
 
         // If the random endpoint repeats, use the same dictionary's indexed word list
@@ -85,7 +81,7 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
             val candidates = requestJsonArray(
                 "$DICTIONARY_BASE/words/en/?filter=${encode(prefix)}&page=0&size=100"
             )
-            for (index in 0 until candidates.length()) {
+            for (index in 0 until minOf(candidates.length(), MAX_DICTIONARY_CANDIDATES)) {
                 if (selected.size >= 2) break
                 val candidate = candidates.optString(index).trim()
                 if (candidate.isBlank() || candidate.equals(first, ignoreCase = true) || candidate.lowercase() in seenWords) continue
@@ -258,7 +254,7 @@ class DailyWordWorker(context: Context, params: WorkerParameters) : CoroutineWor
         private const val KEY_WORDS = "words"
         private const val KEY_HISTORY = "seen_words"
         private const val MAX_HISTORY_WORDS = 10000
-        private const val MAX_WORD_ATTEMPTS = 8
+        private const val MAX_DICTIONARY_CANDIDATES = 12
         private val INDIA_ZONE: ZoneId = ZoneId.of("Asia/Kolkata")
 
         private fun networkConstraints() = Constraints.Builder()
