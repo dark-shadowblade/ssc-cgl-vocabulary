@@ -9,7 +9,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         val view = TextView(this).apply {
-            text = "LexiSprint\n\nTwo challenging SSC CGL words every day.\n\nAdd the two separate LexiSprint widgets from your home-screen widget picker. They refresh automatically when the new daily words are available and keep the last saved words offline."
+            text = "LexiSprint\n\nTwo dictionary-sourced vocabulary words every day.\n\nAdd the two separate LexiSprint widgets from your home-screen widget picker. They fetch fresh entries directly from a free dictionary service, then keep the last saved words available offline. No Cloudflare account, API key, or AI generation is used by the Android widgets.\n\nDictionary data: Wiktionary via Suvankar Free Dictionary API (CC BY-SA 4.0)."
             textSize = 18f
             setTextColor(android.graphics.Color.WHITE)
             setBackgroundColor(android.graphics.Color.rgb(18, 22, 37))
